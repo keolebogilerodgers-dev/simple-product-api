@@ -1,10 +1,8 @@
 // Product Service - Handles API communication with .NET backend
 class ProductService {
     constructor() {
-        // Use your API's base URL - adjust if needed
-        this.baseUrl = window.location.hostname.includes('github.io') 
-            ? 'https://your-username.github.io/simple-product-api/api' // For GitHub Pages
-            : 'https://localhost:5001/api'; // For local development
+        // For the public demo, we use mock data
+this.baseUrl = null; // This will force mock data to be used
     }
 
     async getAllProducts() {
