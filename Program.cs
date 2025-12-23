@@ -1,23 +1,33 @@
-// File: Program.cs
+using Microsoft.EntityFrameworkCore;
+using SimpleProductApi.Models;
 
 var builder = WebApplication.CreateBuilder(args);
 
 // Add services to the container.
-// This line registers the Controllers (like ProductsController) with the app.
 builder.Services.AddControllers();
+builder.Services.AddDbContext<ApplicationDbContext>(opt =>
+    opt.UseInMemoryDatabase("ProductList"));
+builder.Services.AddEndpointsApiExplorer();
+builder.Services.AddSwaggerGen();
 
 var app = builder.Build();
 
 // Configure the HTTP request pipeline.
+if (app.Environment.IsDevelopment())
+{
+    app.UseSwagger();
+    app.UseSwaggerUI();
+}
 
-// Redirects HTTP requests to HTTPS for security.
 app.UseHttpsRedirection();
-
-// Enables authorization middleware (even if we don't use it yet, it's standard).
 app.UseAuthorization();
-
-// Maps incoming requests to the actions in our controllers.
 app.MapControllers();
 
-// This final call runs the application and starts listening for requests.
+// Seed the in-memory database with sample data
+await using (var scope = app.Services.CreateAsyncScope())
+{
+    var db = scope.ServiceProvider.GetRequiredService<ApplicationDbContext>();
+    await DbInitializer.Initialize(db);
+}
+
 app.Run();
