@@ -1,32 +1,32 @@
 using Microsoft.EntityFrameworkCore;
-using SimpleProductApi.Models;
+using simple_product_api.Data;
 
 var builder = WebApplication.CreateBuilder(args);
 
-// Add services to the container.
+// Add services
 builder.Services.AddControllers();
-builder.Services.AddDbContext<ApplicationDbContext>(opt =>
-    opt.UseInMemoryDatabase("ProductList"));
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
 
-var app = builder.Build();
-
-// Add DbContext with SQL Server
+// Add Database
 builder.Services.AddDbContext<AppDbContext>(options =>
-    options.UseSqlServer(builder.Configuration.GetConnectionString("DefaultConnection")
-    ?? "Server=localhost;Database=ProductDb;Trusted_Connection=True;"));
-    
+    options.UseSqlServer(
+        builder.Configuration.GetConnectionString("DefaultConnection") ??
+        "Server=(localdb)\\mssqllocaldb;Database=ProductDb;Trusted_Connection=True;"
+    ));
+
 // Add CORS for frontend
 builder.Services.AddCors(options =>
 {
-    options.AddPolicy("AllowAll",
-        builder => builder.AllowAnyOrigin()
-                          .AllowAnyMethod()
-                          .AllowAnyHeader());
+    options.AddPolicy("AllowAll", builder =>
+        builder.AllowAnyOrigin()
+               .AllowAnyMethod()
+               .AllowAnyHeader());
 });
 
-// Configure the HTTP request pipeline.
+var app = builder.Build();
+
+// Middleware
 if (app.Environment.IsDevelopment())
 {
     app.UseSwagger();
@@ -34,21 +34,15 @@ if (app.Environment.IsDevelopment())
 }
 
 app.UseHttpsRedirection();
+app.UseCors("AllowAll");
 app.UseAuthorization();
 app.MapControllers();
 
-// Seed the in-memory database with sample data
-await using (var scope = app.Services.CreateAsyncScope())
-{
-    var db = scope.ServiceProvider.GetRequiredService<ApplicationDbContext>();
-    await DbInitializer.Initialize(db);
-}
-app.UseCors("AllowAll");
-
-// Create database if it doesn't exist
+// Create database if not exists
 using (var scope = app.Services.CreateScope())
 {
-    var dbContext = scope.ServiceProvider.GetRequiredService<AppDbContext>();
-    dbContext.Database.EnsureCreated();
+    var db = scope.ServiceProvider.GetRequiredService<AppDbContext>();
+    db.Database.EnsureCreated();
 }
+
 app.Run();
