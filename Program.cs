@@ -12,6 +12,20 @@ builder.Services.AddSwaggerGen();
 
 var app = builder.Build();
 
+// Add DbContext with SQL Server
+builder.Services.AddDbContext<AppDbContext>(options =>
+    options.UseSqlServer(builder.Configuration.GetConnectionString("DefaultConnection")
+    ?? "Server=localhost;Database=ProductDb;Trusted_Connection=True;"));
+    
+// Add CORS for frontend
+builder.Services.AddCors(options =>
+{
+    options.AddPolicy("AllowAll",
+        builder => builder.AllowAnyOrigin()
+                          .AllowAnyMethod()
+                          .AllowAnyHeader());
+});
+
 // Configure the HTTP request pipeline.
 if (app.Environment.IsDevelopment())
 {
@@ -29,5 +43,12 @@ await using (var scope = app.Services.CreateAsyncScope())
     var db = scope.ServiceProvider.GetRequiredService<ApplicationDbContext>();
     await DbInitializer.Initialize(db);
 }
+app.UseCors("AllowAll");
 
+// Create database if it doesn't exist
+using (var scope = app.Services.CreateScope())
+{
+    var dbContext = scope.ServiceProvider.GetRequiredService<AppDbContext>();
+    dbContext.Database.EnsureCreated();
+}
 app.Run();
